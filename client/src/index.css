@@ -1,0 +1,91 @@
+/* 1. Sabse pehle fonts load honge */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap');
+
+/* 2. Global Reset - Pura screen use karne ke liye */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Isse padding layout kharab nahi karti */
+}
+
+:root {
+  /* Futuristic Gradient Background */
+  background: radial-gradient(circle at 50% 50%, #001f3f 0%, #000000 100%);
+  color: #00d4ff;
+  font-family: 'Rajdhani', sans-serif;
+  overflow-x: hidden; /* Side scroll rokne ke liye */
+}
+
+body {
+  width: 100%;
+  min-height: 100vh;
+  display: block; /* Flex hata diya taaki full content flow mile */
+  background-attachment: fixed;
+}
+
+/* 3. Typography Upgrade */
+h1, h2, h3, .futuristic-text {
+  font-family: 'Orbitron', sans-serif;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+/* 4. Futuristic Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #000;
+}
+::-webkit-scrollbar-thumb {
+  background: #00d4ff;
+  border-radius: 10px;
+  box-shadow: 0 0 10px #00d4ff;
+}
+
+/* 5. Master-Level Glassmorphism & Animations */
+.glass-card {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: scale(1.03) translateY(-10px);
+  border-color: #00d4ff;
+  box-shadow: 0 0 25px rgba(0, 212, 255, 0.3);
+}
+
+/* 6. Keyframes for Neural Assistant & UI Pulse */
+@keyframes neonPulse {
+  0%, 100% { border-color: rgba(0, 212, 255, 0.3); box-shadow: 0 0 5px rgba(0, 212, 255, 0.2); }
+  50% { border-color: #00d4ff; box-shadow: 0 0 20px rgba(0, 212, 255, 0.6); }
+}
+
+@keyframes scan {
+  0% { top: 0; opacity: 0; }
+  50% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(0, 212, 255, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 15px rgba(0, 212, 255, 0); }
+  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(0, 212, 255, 0); }
+}
+
+.pulse-glow {
+  animation: pulse-ring 2.5s infinite linear;
+}
+
+/* Container padding for standard alignment */
+.container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}

@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Lost-Link Mobile",
+    "slug": "lost-link-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lostlink.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Allow Lost-Link to use your location to find nearby items.",
+        "NSPhotoLibraryUsageDescription": "Allow Lost-Link to access your photos to upload item images."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "package": "com.lostlink.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "c9023bbc-857d-4536-9c13-a65d54170cd0"
+      }
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}
