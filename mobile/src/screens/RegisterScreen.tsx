@@ -8,11 +8,64 @@ const RegisterScreen = ({ navigation }: any) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [phone, setPhone] = useState('+91');
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+
+  const validateEmail = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const validatePhone = (phone: string) => {
+    return /^\+91[0-9]{10}$/.test(phone);
+  };
+
+  const handleSendOtp = async () => {
+    if (!validatePhone(phone)) {
+      Alert.alert('VALIDATION ERROR', 'MOBILE NUMBER MUST START WITH +91 FOLLOWED BY 10 DIGITS');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.post('/auth/send-otp', { phone });
+      setOtpSent(true);
+      Alert.alert('OTP DISPATCHED', 'CHECK YOUR TERMINAL LOGS FOR THE ACCESS CODE (DEMO)');
+    } catch (err: any) {
+      Alert.alert('TRANSMISSION FAILED', err.response?.data?.message?.toUpperCase() || 'SYSTEM ERROR');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otp.length !== 6) {
+      Alert.alert('ERROR', 'ACCESS CODE MUST BE 6 DIGITS');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await api.post('/auth/verify-otp', { phone, code: otp });
+      setOtpVerified(true);
+      Alert.alert('ACCESS GRANTED', 'PHONE NUMBER VERIFIED. PROCEED TO ESTABLISH IDENTITY.');
+    } catch (err: any) {
+      Alert.alert('VERIFICATION FAILED', err.response?.data?.message?.toUpperCase() || 'INVALID CODE');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleRegister = async () => {
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !email || !password || !confirmPassword || !phone) {
       Alert.alert('ACCESS DENIED', 'PLEASE FILL IN ALL FIELDS');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      Alert.alert('VALIDATION ERROR', 'ENTER A VALID TERMINAL EMAIL');
       return;
     }
 
@@ -21,9 +74,14 @@ const RegisterScreen = ({ navigation }: any) => {
       return;
     }
 
+    if (!otpVerified) {
+      Alert.alert('VERIFICATION REQUIRED', 'PLEASE VERIFY YOUR PHONE VIA OTP FIRST');
+      return;
+    }
+
     setLoading(true);
     try {
-      await api.post('/auth/register', { name, email, password });
+      await api.post('/auth/register', { name, email, password, phone });
       Alert.alert('VIRTUAL IDENTITY CREATED', 'PROFILE INITIALIZED SUCCESSFULLY. PROCEED TO AUTH.');
       navigation.navigate('Login');
     } catch (err: any) {
@@ -50,13 +108,14 @@ const RegisterScreen = ({ navigation }: any) => {
 
         <BlurView intensity={30} tint="dark" style={styles.glassCard}>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>FULL DESIGNATION</Text>
+            <Text style={styles.label}>FULL NAME</Text>
             <TextInput
               style={styles.input}
               placeholder="ENTER YOUR NAME"
               placeholderTextColor="rgba(0, 212, 255, 0.4)"
               value={name}
               onChangeText={setName}
+              editable={!otpVerified}
             />
           </View>
 
@@ -70,45 +129,112 @@ const RegisterScreen = ({ navigation }: any) => {
               onChangeText={setEmail}
               autoCapitalize="none"
               keyboardType="email-address"
+              editable={!otpVerified}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>SECURITY ACCESS CODE</Text>
+            <Text style={styles.label}>MOBILE NO (+91)</Text>
             <TextInput
               style={styles.input}
-              placeholder="CREATE A PASSWORD"
+              placeholder="+91XXXXXXXXXX"
               placeholderTextColor="rgba(0, 212, 255, 0.4)"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
+              value={phone}
+              onChangeText={(text) => {
+                if (text.startsWith('+91')) {
+                  // Only allow digits after +91
+                  const digits = text.substring(3).replace(/[^0-9]/g, '');
+                  if (digits.length <= 10) {
+                    setPhone('+91' + digits);
+                  }
+                } else if (text === '' || text === '+') {
+                  setPhone('+91');
+                }
+              }}
+              keyboardType="phone-pad"
+              editable={!otpSent}
             />
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>CONFIRM ACCESS CODE</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="RE-ENTER PASSWORD"
-              placeholderTextColor="rgba(0, 212, 255, 0.4)"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-            />
-          </View>
+          {!otpSent ? (
+            <TouchableOpacity 
+              style={styles.button} 
+              onPress={handleSendOtp} 
+              disabled={loading}
+            >
+              {loading ? <ActivityIndicator color="#00d4ff" /> : <Text style={styles.buttonText}>REQUEST ACCESS CODE</Text>}
+            </TouchableOpacity>
+          ) : !otpVerified ? (
+            <View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>ENTER ACCESS CODE</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="6-DIGIT OTP"
+                  placeholderTextColor="rgba(0, 212, 255, 0.4)"
+                  value={otp}
+                  onChangeText={setOtp}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                />
+              </View>
+              <View style={styles.row}>
+                <TouchableOpacity 
+                  style={[styles.button, { flex: 1, marginRight: 10 }]} 
+                  onPress={handleVerifyOtp} 
+                  disabled={loading}
+                >
+                  {loading ? <ActivityIndicator color="#00d4ff" /> : <Text style={styles.buttonText}>VERIFY CODE</Text>}
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.button, { flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }]} 
+                  onPress={() => { setOtpSent(false); setOtp(''); }} 
+                  disabled={loading}
+                >
+                  <Text style={styles.buttonText}>EDIT NO.</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>SECURITY ACCESS CODE</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="CREATE A PASSWORD"
+                  placeholderTextColor="rgba(0, 212, 255, 0.4)"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                />
+              </View>
 
-          <TouchableOpacity 
-            style={styles.button} 
-            onPress={handleRegister} 
-            disabled={loading}
-            activeOpacity={0.7}
-          >
-            {loading ? (
-              <ActivityIndicator color="#00d4ff" />
-            ) : (
-              <Text style={styles.buttonText}>ESTABLISH IDENTITY</Text>
-            )}
-          </TouchableOpacity>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>CONFIRM ACCESS CODE</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="RE-ENTER PASSWORD"
+                  placeholderTextColor="rgba(0, 212, 255, 0.4)"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry
+                />
+              </View>
+
+              <TouchableOpacity 
+                style={styles.button} 
+                onPress={handleRegister} 
+                disabled={loading}
+                activeOpacity={0.7}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#00d4ff" />
+                ) : (
+                  <Text style={styles.buttonText}>ESTABLISH IDENTITY</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
 
           <TouchableOpacity onPress={() => navigation.navigate('Login')}>
             <Text style={styles.linkText}>ALREADY HAVE A PROFILE? AUTHORIZE</Text>
@@ -116,7 +242,7 @@ const RegisterScreen = ({ navigation }: any) => {
         </BlurView>
         
         <View style={styles.footer}>
-          <Text style={styles.footerText}>AUTHORIZED TERMINAL v2.0.56</Text>
+          <Text style={styles.footerText}>AUTHORIZED TERMINAL v2.1.0</Text>
           <Text style={styles.footerSubText}>SECURED LINK ACCESSED FROM SPACE</Text>
         </View>
       </ScrollView>
@@ -205,9 +331,10 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 12,
     fontFamily: 'Orbitron_700Bold',
     letterSpacing: 1,
+    textAlign: 'center'
   },
   linkText: {
     marginTop: 20,
@@ -217,6 +344,11 @@ const styles = StyleSheet.create({
     fontFamily: 'Rajdhani_500Medium',
     letterSpacing: 1,
     opacity: 0.8,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10
   },
   footer: {
     marginTop: 30,

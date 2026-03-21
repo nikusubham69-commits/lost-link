@@ -189,17 +189,17 @@ const ItemDetailScreen = ({ route, navigation }: any) => {
             </View>
           )}
 
-          {(user?.id === item.reportedBy?._id || user?.role === 'admin') && (
+          {user?.role === 'admin' && (
             <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
               <Ionicons name="trash-outline" size={22} color="#ff0066" />
-              <Text style={styles.deleteBtnText}>PERMANENTLY DELETE</Text>
+              <Text style={styles.deleteBtnText}>ADMIN: PERMANENTLY DELETE</Text>
             </TouchableOpacity>
           )}
 
-          {user && item.reportedBy?._id === user.id && !item.isResolved && (
+          {user?.role === 'admin' && !item.isResolved && (
             <TouchableOpacity style={styles.resolveBtn} onPress={handleResolve}>
               <Ionicons name="checkmark-done-circle-outline" size={22} color="#39ff14" />
-              <Text style={styles.resolveBtnText}>MARK AS RESOLVED</Text>
+              <Text style={styles.resolveBtnText}>ADMIN: MARK AS RESOLVED</Text>
             </TouchableOpacity>
           )}
 

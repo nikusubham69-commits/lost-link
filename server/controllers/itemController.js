@@ -198,26 +198,16 @@ exports.deleteItem = async (req, res) => {
 
         const user = req.user;
         const isAdmin = user && user.role === 'admin';
-        const isOwner = user && item.postedBy && item.postedBy.toString() === user.id;
 
-        console.log(`🗑️ Delete attempt for item ${item._id} by user ${user?.email} (Admin: ${isAdmin}, Owner: ${isOwner})`);
+        console.log(`🗑️ Delete attempt for item ${item._id} by user ${user?.email} (Admin: ${isAdmin})`);
 
-        // Admin can delete ANYTHING, resolved or not
-        if (isAdmin) {
-            await item.deleteOne();
-            return res.status(200).json({ message: "Item deleted successfully (Admin Action)" });
+        // ONLY Admin can delete items
+        if (!isAdmin) {
+            return res.status(403).json({ message: 'Only administrators can delete items' });
         }
 
-        // Owner can delete their own item, but ONLY if it's NOT resolved
-        if (isOwner) {
-            if (item.isResolved) {
-                return res.status(403).json({ message: 'Only administrators can delete resolved items' });
-            }
-            await item.deleteOne();
-            return res.status(200).json({ message: "Item deleted successfully" });
-        }
-
-        return res.status(403).json({ message: 'Not authorized to delete this item' });
+        await item.deleteOne();
+        res.status(200).json({ message: "Item deleted successfully (Admin Action)" });
     } catch (err) {
         console.error('❌ Delete Error:', err.message);
         res.status(500).json({ message: err.message });
@@ -270,6 +260,13 @@ exports.updateItem = async (req, res) => {
 
 exports.resolveItem = async (req, res) => {
     try {
+        const user = req.user;
+        const isAdmin = user && user.role === 'admin';
+
+        if (!isAdmin) {
+            return res.status(403).json({ message: 'Only administrators can resolve items' });
+        }
+
         const item = await Item.findById(req.params.id);
         if (!item) return res.status(404).json({ message: "Item not found" });
 
@@ -289,7 +286,7 @@ exports.resolveItem = async (req, res) => {
             );
         }
 
-        res.status(200).json({ message: "REWARD CREDITED: +50 GIET Points!" });
+        res.status(200).json({ message: "RESOLVED BY ADMIN: +50 GIET Points credited to finder!" });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

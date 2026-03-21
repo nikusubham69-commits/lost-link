@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // in-memory OTP store for demo
-const otps = {}; // key: phone or email, value: code
+const otps = {}; // key: phone, value: { code, expires, verified }
 
 function generateOtp() {
     return String(Math.floor(100000 + Math.random() * 900000));
@@ -13,8 +13,14 @@ exports.register = async (req, res) => {
     try {
         const { name, email, password, phone } = req.body;
 
-        // For demo purposes, allow registration without phone verification
-        // In production, you should require phoneVerified: true
+        if (!name || !email || !password || !phone) {
+            return res.status(400).json({ message: "All fields are required" });
+        }
+
+        // Validate verified phone
+        if (!otps[phone] || !otps[phone].verified) {
+            return res.status(400).json({ message: "Phone number not verified via OTP" });
+        }
 
         let user = await User.findOne({ email });
         if (user) return res.status(400).json({ message: "User already exists" });
@@ -26,12 +32,14 @@ exports.register = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            phone: phone || '',
-            phoneVerified: false, // Set to false for demo
-            role: 'user' // Force user role on registration
+            phone: phone,
+            phoneVerified: true,
+            role: 'user'
         });
 
-        // Generate token for immediate login after registration
+        // Cleanup OTP
+        delete otps[phone];
+
         const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
         res.status(201).json({
@@ -50,15 +58,31 @@ exports.register = async (req, res) => {
     }
 };
 
-// send OTP (demo)
+// send OTP
 exports.sendOtp = async (req, res) => {
     try {
         const { phone } = req.body;
         if (!phone) return res.status(400).json({ message: 'Phone required' });
+        
+        // Validate Indian phone format (+91 followed by 10 digits)
+        const phoneRegex = /^\+91[0-9]{10}$/;
+        if (!phoneRegex.test(phone)) {
+            return res.status(400).json({ message: 'Invalid format. Use +91XXXXXXXXXX' });
+        }
+
         const code = generateOtp();
-        otps[phone] = { code, expires: Date.now() + 1000 * 60 * 5 };
-        console.log('OTP for', phone, code);
-        res.json({ message: 'OTP sent', code });
+        otps[phone] = { 
+            code, 
+            expires: Date.now() + 1000 * 60 * 5,
+            verified: false 
+        };
+        
+        console.log('--- 🛡️ OTP DISPATCHED ---');
+        console.log('TARGET:', phone);
+        console.log('CODE:', code);
+        console.log('------------------------');
+        
+        res.json({ message: 'OTP sent successfully (Check server logs for demo)', code }); // code returned for demo
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -69,11 +93,13 @@ exports.verifyOtp = async (req, res) => {
     try {
         const { phone, code } = req.body;
         const record = otps[phone];
-        if (!record) return res.status(400).json({ message: 'No OTP request found' });
+        
+        if (!record) return res.status(400).json({ message: 'No OTP request found for this number' });
         if (record.expires < Date.now()) return res.status(400).json({ message: 'OTP expired' });
-        if (record.code !== code) return res.status(400).json({ message: 'Invalid code' });
-        delete otps[phone];
-        res.json({ message: 'Verified' });
+        if (record.code !== code) return res.status(400).json({ message: 'Invalid verification code' });
+        
+        otps[phone].verified = true;
+        res.json({ message: 'Phone number verified successfully' });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
