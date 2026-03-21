@@ -44,7 +44,20 @@
       }
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Lost-Link to access your photos to upload item images."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysPermission": "Allow Lost-Link to use your location to find nearby items."
+        }
+      ],
+      "expo-secure-store"
     ]
   }
 }
