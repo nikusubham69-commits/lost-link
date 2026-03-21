@@ -82,7 +82,11 @@ exports.createItem = async (req, res) => {
         const io = req.app.get('io');
         if (io) {
             const populated = await newItem.populate('postedBy', 'name email');
-            io.emit('new-item', populated);
+            const emitObj = populated.toObject();
+            emitObj.status = emitObj.type; // for mobile app compatibility
+            emitObj.images = emitObj.image ? [emitObj.image] : [];
+            emitObj.date = emitObj.createdAt;
+            io.emit('new-item', emitObj);
         }
 
         res.status(201).json(newItem);

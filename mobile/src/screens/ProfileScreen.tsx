@@ -61,7 +61,7 @@ const ProfileScreen = ({ navigation }: any) => {
             <Ionicons name="chevron-forward-outline" size={18} color="rgba(0, 212, 255, 0.3)" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => navigation.navigate('SystemConfig')}>
             <Ionicons name="settings-outline" size={22} color="#00d4ff" />
             <Text style={styles.menuText}>SYSTEM CONFIG</Text>
             <Ionicons name="chevron-forward-outline" size={18} color="rgba(0, 212, 255, 0.3)" />

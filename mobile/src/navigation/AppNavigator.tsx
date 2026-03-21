@@ -15,6 +15,7 @@ import ChatListScreen from '../screens/ChatListScreen';
 import ChatDetailScreen from '../screens/ChatDetailScreen';
 import MyItemsScreen from '../screens/MyItemsScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
+import SystemConfigScreen from '../screens/SystemConfigScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -64,6 +65,7 @@ const AppNavigator = () => {
           <Stack.Screen name="ChatDetail" component={ChatDetailScreen} />
           <Stack.Screen name="MyItems" component={MyItemsScreen} options={{ title: 'MY REPORTS' }} />
           <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ title: 'LEADERBOARD' }} />
+          <Stack.Screen name="SystemConfig" component={SystemConfigScreen} options={{ title: 'SYSTEM CONFIG' }} />
         </>
       ) : (
         <>

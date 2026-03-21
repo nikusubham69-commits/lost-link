@@ -25,7 +25,7 @@ const HomeScreen = ({ navigation }: any) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const isFocused = useIsFocused();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const fetchItems = useCallback(async () => {
     try {
@@ -56,9 +56,25 @@ const HomeScreen = ({ navigation }: any) => {
       console.log('Real-time connection established on Home');
     });
 
-    socket.on('new-item', (newItem: Item) => {
+    socket.on('new-item', (newItem: any) => {
       console.log('New item received from server', newItem);
+      
+      // Update list
       setItems(prevItems => [newItem, ...prevItems]);
+
+      // Show global notification if not posted by current user
+      const isMine = user && newItem.postedBy && (newItem.postedBy._id === user.id || newItem.postedBy === user.id);
+      
+      if (!isMine) {
+        Alert.alert(
+          '🚨 NEW BROADCAST',
+          `A new ${newItem.category.toUpperCase()} has been ${newItem.type.toUpperCase()} in the sector: ${newItem.title.toUpperCase()}`,
+          [
+            { text: 'DISMISS', style: 'cancel' },
+            { text: 'VIEW INTEL', onPress: () => navigation.navigate('ItemDetail', { itemId: newItem._id }) }
+          ]
+        );
+      }
     });
 
     socket.on('disconnect', () => {
