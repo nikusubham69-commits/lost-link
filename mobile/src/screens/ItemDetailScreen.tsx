@@ -5,7 +5,6 @@ import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
-import MapView, { Marker } from 'react-native-maps';
 
 const { width } = Dimensions.get('window');
 
@@ -126,13 +125,14 @@ const ItemDetailScreen = ({ route, navigation }: any) => {
 
   if (!item) return null;
 
-  return (    <LinearGradient colors={['#001f3f', '#000000']} style={styles.container}>
+  return (
+    <LinearGradient colors={['#001f3f', '#000000']} style={styles.container}>
       <ScrollView>
         <View style={styles.imageSection}>
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
             {item.images && Array.isArray(item.images) && item.images.length > 0 ? (
               item.images.map((img: string, idx: number) => (
-                <Image key={idx} source={{ uri: img }} style={styles.image} />
+                img ? <Image key={idx} source={{ uri: img }} style={styles.image} /> : null
               ))
             ) : (
               <View style={[styles.image, styles.placeholderImage]}>
@@ -170,34 +170,18 @@ const ItemDetailScreen = ({ route, navigation }: any) => {
             </View>
           </BlurView>
 
-          {item.location && item.location.coordinates && Array.isArray(item.location.coordinates) && item.location.coordinates.length >= 2 && (
-            <View style={styles.mapSection}>
-              <Text style={styles.sectionTitle}>GEOSPATIAL COORDINATES</Text>
-              <View style={styles.mapWrapper}>
-                <MapView
-                  style={styles.map}
-                  initialRegion={{
-                    latitude: Number(item.location.coordinates[1]) || 0,
-                    longitude: Number(item.location.coordinates[0]) || 0,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }}
-                  scrollEnabled={false}
-                  zoomEnabled={false}
-                  customMapStyle={darkMapStyle}
-                >
-                  <Marker
-                    coordinate={{
-                      latitude: Number(item.location.coordinates[1]) || 0,
-                      longitude: Number(item.location.coordinates[0]) || 0,
-                    }}
-                  >
-                    <Ionicons name="location" size={30} color="#ff0066" />
-                  </Marker>
-                </MapView>
+          <View style={styles.mapSection}>
+            <Text style={styles.sectionTitle}>GEOSPATIAL LOCATION</Text>
+            <BlurView intensity={20} tint="dark" style={styles.locationCard}>
+              <Ionicons name="location-outline" size={24} color="#ff0066" />
+              <View style={styles.locationTextContainer}>
+                <Text style={styles.locationAddress}>{item.location?.address || 'NO ADDRESS PROVIDED'}</Text>
+                <Text style={styles.locationCoords}>
+                  LAT: {item.location?.coordinates?.[1] || '0.0'} | LON: {item.location?.coordinates?.[0] || '0.0'}
+                </Text>
               </View>
-            </View>
-          )}
+            </BlurView>
+          </View>
 
           {user?.role === 'admin' && (
             <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
@@ -222,18 +206,6 @@ const ItemDetailScreen = ({ route, navigation }: any) => {
     </LinearGradient>
   );
 };
-
-const darkMapStyle = [
-  { "elementType": "geometry", "stylers": [{ "color": "#242f3e" }] },
-  { "elementType": "labels.text.fill", "stylers": [{ "color": "#746855" }] },
-  { "elementType": "labels.text.stroke", "stylers": [{ "color": "#242f3e" }] },
-  { "featureType": "administrative.locality", "elementType": "labels.text.fill", "stylers": [{ "color": "#d59563" }] },
-  { "featureType": "poi", "elementType": "labels.text.fill", "stylers": [{ "color": "#d59563" }] },
-  { "featureType": "road", "elementType": "geometry", "stylers": [{ "color": "#38414e" }] },
-  { "featureType": "road", "elementType": "geometry.stroke", "stylers": [{ "color": "#212a37" }] },
-  { "featureType": "road", "elementType": "labels.text.fill", "stylers": [{ "color": "#9ca5b3" }] },
-  { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#17263c" }] }
-];
 
 const styles = StyleSheet.create({
   container: {
@@ -339,15 +311,49 @@ const styles = StyleSheet.create({
     color: '#00d4ff',    marginBottom: 15,
     letterSpacing: 1,
   },
-  mapWrapper: {
-    height: 200,
+  locationCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 20,
     borderRadius: 24,
-    overflow: 'hidden',
     borderWidth: 1,
     borderColor: 'rgba(0, 212, 255, 0.3)',
+    overflow: 'hidden',
   },
-  map: {
-    ...StyleSheet.absoluteFillObject,
+  locationTextContainer: {
+    marginLeft: 15,
+    flex: 1,
+  },
+  locationAddress: {
+    fontSize: 14,
+    color: '#fff',
+    fontFamily: 'Rajdhani_700Bold',
+    letterSpacing: 1,
+  },
+  locationCoords: {
+    fontSize: 10,
+    color: 'rgba(0, 212, 255, 0.6)',
+    fontFamily: 'Orbitron_400Regular',
+    marginTop: 4,
+  },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 0, 102, 0.1)',
+    borderWidth: 1,
+    borderColor: '#ff0066',
+    borderRadius: 12,
+    padding: 15,
+    marginTop: 20,
+    marginBottom: 15,
+  },
+  deleteBtnText: {
+    color: '#ff0066',
+    fontFamily: 'Orbitron_700Bold',
+    fontSize: 14,
+    marginLeft: 10,
+    letterSpacing: 1,
   },
   chatBtn: {
     backgroundColor: '#003366',
@@ -384,24 +390,6 @@ const styles = StyleSheet.create({
     color: '#39ff14',
     fontSize: 14,
     fontFamily: 'Orbitron_700Bold',
-    marginLeft: 10,
-    letterSpacing: 1,
-  },
-  deleteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 0, 102, 0.1)',
-    borderWidth: 1,
-    borderColor: '#ff0066',
-    borderRadius: 12,
-    padding: 15,
-    marginTop: 20,
-  },
-  deleteBtnText: {
-    color: '#ff0066',
-    fontFamily: 'Orbitron_700Bold',
-    fontSize: 14,
     marginLeft: 10,
     letterSpacing: 1,
   },
