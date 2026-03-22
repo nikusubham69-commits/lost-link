@@ -105,6 +105,16 @@ const ItemDetailScreen = ({ route, navigation }: any) => {
     }
   };
 
+  const formatDate = (dateStr: string) => {
+    try {
+      if (!dateStr) return 'UNKNOWN';
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? 'UNKNOWN' : d.toLocaleDateString().toUpperCase();
+    } catch (e) {
+      return 'UNKNOWN';
+    }
+  };
+
   if (loading) {
     return (
       <LinearGradient colors={['#001f3f', '#000000']} style={styles.loadingContainer}>
@@ -120,7 +130,7 @@ const ItemDetailScreen = ({ route, navigation }: any) => {
       <ScrollView>
         <View style={styles.imageSection}>
           <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false}>
-            {item.images && item.images.length > 0 ? (
+            {item.images && Array.isArray(item.images) && item.images.length > 0 ? (
               item.images.map((img: string, idx: number) => (
                 <Image key={idx} source={{ uri: img }} style={styles.image} />
               ))
@@ -133,7 +143,7 @@ const ItemDetailScreen = ({ route, navigation }: any) => {
           <BlurView intensity={20} tint="dark" style={styles.imageOverlay}>
             <View style={[
               styles.statusBadge, 
-              { backgroundColor: item.status === 'lost' ? 'rgba(255, 0, 102, 0.8)' : 'rgba(57, 255, 20, 0.8)' }
+              { backgroundColor: (item.status || 'lost') === 'lost' ? 'rgba(255, 0, 102, 0.8)' : 'rgba(57, 255, 20, 0.8)' }
             ]}>
               <Text style={styles.statusText}>{(item.status || 'UNKNOWN').toUpperCase()}</Text>
             </View>
@@ -145,13 +155,13 @@ const ItemDetailScreen = ({ route, navigation }: any) => {
           <Text style={styles.title}>{(item.title || 'UNTITLED').toUpperCase()}</Text>
           
           <BlurView intensity={20} tint="dark" style={styles.infoCard}>
-            <Text style={styles.description}>{item.description}</Text>
+            <Text style={styles.description}>{item.description || 'NO DESCRIPTION PROVIDED'}</Text>
             
             <View style={styles.divider} />
             
             <View style={styles.infoRow}>
               <Ionicons name="calendar-outline" size={18} color="#00d4ff" />
-              <Text style={styles.infoText}>TIMESTAMP: {item.date ? new Date(item.date).toLocaleDateString().toUpperCase() : 'UNKNOWN'}</Text>
+              <Text style={styles.infoText}>TIMESTAMP: {formatDate(item.date)}</Text>
             </View>
 
             <View style={styles.infoRow}>
@@ -160,7 +170,7 @@ const ItemDetailScreen = ({ route, navigation }: any) => {
             </View>
           </BlurView>
 
-          {item.location && item.location.coordinates && item.location.coordinates.length >= 2 && (
+          {item.location && item.location.coordinates && Array.isArray(item.location.coordinates) && item.location.coordinates.length >= 2 && (
             <View style={styles.mapSection}>
               <Text style={styles.sectionTitle}>GEOSPATIAL COORDINATES</Text>
               <View style={styles.mapWrapper}>
