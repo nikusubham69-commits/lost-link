@@ -1,29 +1,124 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const twilioPkg = require('twilio');
 
-// in-memory OTP store for demo
-const otps = {}; // key: phone, value: { code, expires, verified }
+const OTP_TTL_MS = 10 * 60 * 1000;
+const VERIFY_TTL_MS = 15 * 60 * 1000;
+const RESEND_COOLDOWN_MS = 60 * 1000;
 
-function generateOtp() {
+const otpByPhone = new Map();
+const verifiedPhoneUntil = new Map();
+const lastOtpSentAt = new Map();
+
+function normalizeToE164(raw) {
+    const trimmed = String(raw || '').trim();
+    const digits = trimmed.replace(/\D/g, '');
+    if (digits.length === 10) return '+91' + digits;
+    if (digits.length === 12 && digits.startsWith('91')) return '+' + digits;
+    if (trimmed.startsWith('+') && digits.length >= 10) return '+' + digits;
+    if (digits.length >= 10 && digits.length <= 15) return '+' + digits;
+    return null;
+}
+
+function generateOtpCode() {
     return String(Math.floor(100000 + Math.random() * 900000));
 }
+
+function getTwilioClient() {
+    const sid = process.env.TWILIO_ACCOUNT_SID;
+    const token = process.env.TWILIO_AUTH_TOKEN;
+    if (!sid || !token) return null;
+    return twilioPkg(sid, token);
+}
+
+exports.sendOtp = async (req, res) => {
+    try {
+        const { phone } = req.body;
+        const e164 = normalizeToE164(phone);
+        if (!e164) {
+            return res.status(400).json({ message: 'Valid phone number required (10 digits or +91…).' });
+        }
+
+        const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+        const twilioClient = getTwilioClient();
+        if (!twilioClient || !fromNumber) {
+            return res.status(503).json({
+                message:
+                    'SMS is not configured. Add TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_PHONE_NUMBER to server/.env',
+            });
+        }
+
+        const now = Date.now();
+        const last = lastOtpSentAt.get(e164) || 0;
+        if (now - last < RESEND_COOLDOWN_MS) {
+            const waitSec = Math.ceil((RESEND_COOLDOWN_MS - (now - last)) / 1000);
+            return res.status(429).json({ message: `Please wait ${waitSec}s before requesting another OTP.` });
+        }
+
+        const code = generateOtpCode();
+        otpByPhone.set(e164, { code, expiresAt: now + OTP_TTL_MS });
+        lastOtpSentAt.set(e164, now);
+
+        await twilioClient.messages.create({
+            body: `LOST-LINK GIET: Your verification code is ${code}. Valid for 10 minutes. Do not share this code.`,
+            from: fromNumber,
+            to: e164,
+        });
+
+        return res.json({ message: 'OTP sent to your phone number.' });
+    } catch (err) {
+        console.error('sendOtp error:', err.message);
+        return res.status(500).json({
+            message: err.message || 'Failed to send SMS. Check Twilio credentials and trial verified numbers.',
+        });
+    }
+};
+
+exports.verifyOtp = async (req, res) => {
+    try {
+        const { phone, otp } = req.body;
+        const e164 = normalizeToE164(phone);
+        if (!e164 || !otp) {
+            return res.status(400).json({ message: 'Phone and OTP are required.' });
+        }
+
+        const record = otpByPhone.get(e164);
+        if (!record || Date.now() > record.expiresAt) {
+            otpByPhone.delete(e164);
+            return res.status(400).json({ message: 'OTP expired or not found. Request a new OTP.' });
+        }
+
+        if (String(otp).trim() !== record.code) {
+            return res.status(400).json({ message: 'Invalid OTP. Try again.' });
+        }
+
+        otpByPhone.delete(e164);
+        verifiedPhoneUntil.set(e164, Date.now() + VERIFY_TTL_MS);
+
+        return res.json({ success: true, message: 'Phone verified.' });
+    } catch (err) {
+        console.error('verifyOtp error:', err);
+        return res.status(500).json({ message: err.message });
+    }
+};
 
 exports.register = async (req, res) => {
     try {
         const { name, email, password, phone } = req.body;
 
-        if (!name || !email || !password || !phone) {
-            return res.status(400).json({ message: "All fields are required" });
+        const e164 = normalizeToE164(phone);
+        if (!e164) {
+            return res.status(400).json({ message: 'Valid phone number required.' });
         }
 
-        // Validate verified phone
-        if (!otps[phone] || !otps[phone].verified) {
-            return res.status(400).json({ message: "Phone number not verified via OTP" });
+        const until = verifiedPhoneUntil.get(e164);
+        if (!until || Date.now() > until) {
+            return res.status(400).json({ message: 'Phone not verified. Complete OTP verification first.' });
         }
 
         let user = await User.findOne({ email });
-        if (user) return res.status(400).json({ message: "User already exists" });
+        if (user) return res.status(400).json({ message: 'User already exists' });
 
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -32,74 +127,13 @@ exports.register = async (req, res) => {
             name,
             email,
             password: hashedPassword,
-            phone: phone,
+            phone: e164,
             phoneVerified: true,
-            role: 'user'
         });
 
-        // Cleanup OTP
-        delete otps[phone];
+        verifiedPhoneUntil.delete(e164);
 
-        const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1d' });
-
-        res.status(201).json({
-            message: "Registration successful!",
-            token,
-            user: { 
-                id: user._id, 
-                name: user.name, 
-                email: user.email, 
-                role: user.role || 'user',
-                points: user.points || 0 
-            }
-        });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
-// send OTP
-exports.sendOtp = async (req, res) => {
-    try {
-        const { phone } = req.body;
-        if (!phone) return res.status(400).json({ message: 'Phone required' });
-        
-        // Validate Indian phone format (+91 followed by 10 digits)
-        const phoneRegex = /^\+91[0-9]{10}$/;
-        if (!phoneRegex.test(phone)) {
-            return res.status(400).json({ message: 'Invalid format. Use +91XXXXXXXXXX' });
-        }
-
-        const code = generateOtp();
-        otps[phone] = { 
-            code, 
-            expires: Date.now() + 1000 * 60 * 5,
-            verified: false 
-        };
-        
-        console.log('--- 🛡️ OTP DISPATCHED ---');
-        console.log('TARGET:', phone);
-        console.log('CODE:', code);
-        console.log('------------------------');
-        
-        res.json({ message: 'OTP sent successfully (Check server logs for demo)', code }); // code returned for demo
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-};
-
-// verify OTP
-exports.verifyOtp = async (req, res) => {
-    try {
-        const { phone, code } = req.body;
-        const record = otps[phone];
-        
-        if (!record) return res.status(400).json({ message: 'No OTP request found for this number' });
-        if (record.expires < Date.now()) return res.status(400).json({ message: 'OTP expired' });
-        if (record.code !== code) return res.status(400).json({ message: 'Invalid verification code' });
-        
-        otps[phone].verified = true;
-        res.json({ message: 'Phone number verified successfully' });
+        res.status(201).json({ message: 'Registration successful!' });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -108,40 +142,15 @@ exports.verifyOtp = async (req, res) => {
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
-        
-        console.log('🔐 Login attempt:', { email, password: '***' });
-        
-        if (!email || !password) {
-            console.log('❌ Missing email or password');
-            return res.status(400).json({ message: "Email and password required" });
-        }
-        
         const user = await User.findOne({ email });
-        if (!user) {
-            console.log('❌ User not found:', email);
-            return res.status(400).json({ message: "Invalid Credentials" });
-        }
+        if (!user) return res.status(400).json({ message: 'Invalid Credentials' });
 
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            console.log('❌ Password mismatch');
-            return res.status(400).json({ message: "Invalid Credentials" });
-        }
+        if (!isMatch) return res.status(400).json({ message: 'Invalid Credentials' });
 
-        const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1d' });
-        console.log('✅ Login successful:', email);
-        res.json({ 
-            token, 
-            user: { 
-                id: user._id, 
-                name: user.name, 
-                email: user.email, 
-                role: user.role || 'user', 
-                points: user.points || 0 
-            } 
-        });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+        res.json({ token, user: { id: user._id, name: user.name, email: user.email } });
     } catch (err) {
-        console.error('❌ Login error:', err.message);
         res.status(500).json({ message: err.message });
     }
 };

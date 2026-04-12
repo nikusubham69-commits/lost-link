@@ -34,15 +34,23 @@ export const formStyle = {
     margin: 'auto'
 };
 
+/** Light text on dark fields so users can read typed text and placeholders */
 export const inputStyle = {
     padding: '12px 15px',
     borderRadius: '8px',
-    border: '1px solid #333',
-    background: '#2c2c2c',
-    color: 'black',
+    border: '1px solid rgba(0, 212, 255, 0.35)',
+    background: 'rgba(15, 25, 40, 0.95)',
+    color: '#f0f7ff',
     fontSize: '16px',
     width: '100%',
     boxSizing: 'border-box'
+};
+
+export const fieldHintStyle = {
+    fontSize: '0.78rem',
+    color: 'rgba(200, 230, 255, 0.85)',
+    marginTop: '4px',
+    lineHeight: 1.4
 };
 
 export const buttonStyle = {

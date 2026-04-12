@@ -28,11 +28,12 @@
       },
       "package": "com.lostlink.app",
       "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -40,7 +41,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "c9023bbc-857d-4536-9c13-a65d54170cd0"
+        "projectId": "666638d2-b99d-47b5-b615-4f2080097a58"
       }
     },
     "plugins": [
@@ -58,6 +59,7 @@
         }
       ],
       "expo-secure-store"
-    ]
+    ],
+    "owner": "lostlink11"
   }
 }

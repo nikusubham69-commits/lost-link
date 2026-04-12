@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
 import { useNavigate } from 'react-router-dom';
-import { inputStyle, buttonStyle } from '../styles'; 
+import { inputStyle, buttonStyle, fieldHintStyle } from '../styles'; 
 
 const PostItem = () => {
     const navigate = useNavigate();
@@ -13,6 +13,7 @@ const PostItem = () => {
         description: '',
         category: 'Electronics',
         type: 'lost',
+        location: '',
         userEmail: userData ? userData.email : ''
     });
 
@@ -33,6 +34,9 @@ const PostItem = () => {
         data.append('category', formData.category);
         data.append('type', formData.type);
         data.append('userEmail', formData.userEmail);
+        if (formData.location) {
+            data.append('location', formData.location);
+        }
         
         if (image) {
             data.append('image', image);
@@ -49,70 +53,97 @@ const PostItem = () => {
 
     return (
         <div style={formContainerStyle}>
-            <h2 style={{ textAlign: 'center', color: '#2ecc71', marginBottom: '20px' }}>Post a New Item</h2>
+            <h2 style={{ textAlign: 'center', color: '#7dffb3', marginBottom: '8px' }}>Post a new item</h2>
+            <p style={{ textAlign: 'center', ...fieldHintStyle, marginBottom: '20px' }}>
+                Each field has a clear label. What you type appears in light text for easy reading.
+            </p>
             <form onSubmit={handleSubmit} style={formStyle}>
-                
-                <input 
-                    type="text" 
-                    placeholder="Item Name" 
-                    style={responsiveInputStyle}
-                    onChange={(e) => setFormData({...formData, title: e.target.value})} 
-                    required 
-                />
+                <div>
+                    <label style={fieldLabelStyle}>Item title</label>
+                    <input 
+                        type="text" 
+                        className="readable-input"
+                        placeholder="e.g. Samsung phone, ID card, wallet"
+                        style={responsiveInputStyle}
+                        onChange={(e) => setFormData({...formData, title: e.target.value})} 
+                        required 
+                    />
+                </div>
 
-                <textarea 
-                    placeholder="Description..." 
-                    style={{ ...responsiveInputStyle, height: '100px', resize: 'vertical' }}
-                    onChange={(e) => setFormData({...formData, description: e.target.value})} 
-                    required 
-                />
+                <div>
+                    <label style={fieldLabelStyle}>Description</label>
+                    <textarea 
+                        className="readable-input"
+                        placeholder="Color, marks, when and where seen or lost — more detail helps"
+                        style={{ ...responsiveInputStyle, height: '100px', resize: 'vertical' }}
+                        onChange={(e) => setFormData({...formData, description: e.target.value})} 
+                        required 
+                    />
+                </div>
 
                 <div style={flexRowStyle}>
-                    <select style={{...responsiveInputStyle, flex: 1}} value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}>
-                        <option value="Electronics">Electronics</option>
-                        <option value="Books">Books</option>
-                        <option value="ID Card">ID Card</option>
-                        <option value="Other">Other</option>
-                    </select>
+                    <div style={{ flex: '1 1 140px' }}>
+                        <label style={fieldLabelStyle}>Category</label>
+                        <select className="readable-input" style={{...responsiveInputStyle, flex: 1}} value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})}>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Books">Books</option>
+                            <option value="ID Card">ID Card</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
 
-                    <select style={{...responsiveInputStyle, flex: 1}} value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}>
-                        <option value="lost">Lost</option>
-                        <option value="found">Found</option>
-                    </select>
+                    <div style={{ flex: '1 1 140px' }}>
+                        <label style={fieldLabelStyle}>Type</label>
+                        <select className="readable-input" style={{...responsiveInputStyle, flex: 1}} value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})}>
+                            <option value="lost">Lost</option>
+                            <option value="found">Found</option>
+                        </select>
+                    </div>
 
-<select 
-    style={responsiveInputStyle} 
-    onChange={(e) => setFormData({...formData, location: e.target.value})}
-    required
->
-    <option value="">SELECT LAST KNOWN LOCATION</option>
-    <option value="GIET LIBRARY">GIET LIBRARY</option>
-    <option value="CANTEEN AREA">CANTEEN AREA</option>
-    <option value="BLOCK-1 (CSE)">BLOCK-1 (CSE)</option>
-    <option value="AUDITORIUM">AUDITORIUM</option>
-    <option value="PLAYGROUND">PLAYGROUND</option>
-    <option value="HOSTEL MESS">HOSTEL MESS</option>
-</select>
+                    <div style={{ flex: '1 1 200px' }}>
+                        <label style={fieldLabelStyle}>Last known location</label>
+                        <select 
+                            className="readable-input"
+                            style={responsiveInputStyle} 
+                            onChange={(e) => setFormData({...formData, location: e.target.value})}
+                            required
+                            value={formData.location || ''}
+                        >
+                            <option value="">— Select —</option>
+                            <option value="GIET LIBRARY">GIET LIBRARY</option>
+                            <option value="CANTEEN AREA">CANTEEN AREA</option>
+                            <option value="BLOCK-1 (CSE)">BLOCK-1 (CSE)</option>
+                            <option value="AUDITORIUM">AUDITORIUM</option>
+                            <option value="PLAYGROUND">PLAYGROUND</option>
+                            <option value="HOSTEL MESS">HOSTEL MESS</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div style={uploadBoxStyle}>
-                    <label style={{ fontSize: '14px', color: '#bbb', marginBottom: '8px', display: 'block' }}>
-                        📷 Upload Item Image (Optional):
+                    <label style={{ fontSize: '0.9rem', color: '#d4e9ff', marginBottom: '8px', display: 'block', fontWeight: 600 }}>
+                        📷 Photo (optional)
                     </label>
+                    <p style={{ ...fieldHintStyle, marginBottom: '8px' }}>Upload a photo of the item to make it easier to identify.</p>
                     <input 
                         type="file" 
                         accept="image/*"
-                        style={{ width: '100%', fontSize: '12px' }}
+                        style={{ width: '100%', fontSize: '13px', color: '#e8f4ff' }}
                         onChange={(e) => setImage(e.target.files[0])} 
                     />
                 </div>
 
-                <input 
-                    type="email" 
-                    style={{...responsiveInputStyle, background: '#333', cursor: 'not-allowed'}}
-                    value={formData.userEmail} 
-                    readOnly 
-                />
+                <div>
+                    <label style={fieldLabelStyle}>Your email (login)</label>
+                    <input 
+                        type="email" 
+                        className="readable-input"
+                        style={{...responsiveInputStyle, opacity: 0.9, cursor: 'not-allowed'}}
+                        value={formData.userEmail} 
+                        readOnly 
+                    />
+                    <p style={fieldHintStyle}>Filled from your account; cannot be changed here.</p>
+                </div>
 
                 <button type="submit" style={{ ...buttonStyle, width: '100%', padding: '12px', marginTop: '10px' }}>
                     Submit Post
@@ -156,9 +187,17 @@ const flexRowStyle = {
 
 const uploadBoxStyle = {
     padding: '12px',
-    border: '1px dashed #444',
+    border: '1px dashed rgba(0, 212, 255, 0.35)',
     borderRadius: '8px',
-    background: '#252525'
+    background: 'rgba(20, 30, 45, 0.9)'
+};
+
+const fieldLabelStyle = {
+    display: 'block',
+    fontSize: '0.85rem',
+    fontWeight: 600,
+    color: '#d4f4ff',
+    marginBottom: '6px'
 };
 
 export default PostItem;

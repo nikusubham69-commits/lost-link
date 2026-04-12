@@ -1,11 +1,11 @@
-/* 1. Sabse pehle fonts load honge */
+/* 1. Load fonts first */
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap');
 
-/* 2. Global Reset - Pura screen use karne ke liye */
+/* 2. Global reset — full-width layout */
 * {
   margin: 0;
   padding: 0;
-  box-sizing: border-box; /* Isse padding layout kharab nahi karti */
+  box-sizing: border-box; /* Include padding in width */
 }
 
 :root {
@@ -13,13 +13,13 @@
   background: radial-gradient(circle at 50% 50%, #001f3f 0%, #000000 100%);
   color: #00d4ff;
   font-family: 'Rajdhani', sans-serif;
-  overflow-x: hidden; /* Side scroll rokne ke liye */
+  overflow-x: hidden; /* Prevent horizontal scroll */
 }
 
 body {
   width: 100%;
   min-height: 100vh;
-  display: block; /* Flex hata diya taaki full content flow mile */
+  display: block; /* Normal document flow for full content */
   background-attachment: fixed;
 }
 
@@ -88,4 +88,23 @@ h1, h2, h3, .futuristic-text {
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
+}
+
+/* Form fields: light text so users can read what they type */
+input.readable-input,
+textarea.readable-input,
+select.readable-input {
+  color: #f0f7ff !important;
+  caret-color: #00d4ff;
+}
+
+input.readable-input::placeholder,
+textarea.readable-input::placeholder {
+  color: rgba(220, 235, 255, 0.55) !important;
+  opacity: 1;
+}
+
+select.readable-input option {
+  background: #152030;
+  color: #f0f7ff;
 }

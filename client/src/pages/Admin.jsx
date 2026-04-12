@@ -8,7 +8,7 @@ const Admin = () => {
     // Get user data from localStorage
     const storedUser = localStorage.getItem('user');
     const user = storedUser ? JSON.parse(storedUser) : null;
-    const isAdmin = user && user.role === "admin";
+    const isAdmin = user && user.email === "lostlink11@gmail.com";
 
     const [allPosts, setAllPosts] = useState([]);
     const [loading, setLoading] = useState(true);

@@ -9,16 +9,18 @@ const MyItems = () => {
     useEffect(() => {
         const fetchMyItems = async () => {
             try {
-                const res = await api.get('/api/items/my-items');
-                setMyItems(res.data);
+                const res = await api.get('/api/items/all');
+                // Only items posted by the logged-in user
+                const filtered = res.data.filter(item => item.userEmail === user.email);
+                setMyItems(filtered);
+                setLoading(false);
             } catch (err) {
                 console.error("Error fetching items", err);
-            } finally {
                 setLoading(false);
             }
         };
         fetchMyItems();
-    }, []);
+    }, [user.email]);
 
     // ✅ Function 1: Mark as Resolved
     const handleResolve = async (id) => {
@@ -27,11 +29,6 @@ const MyItems = () => {
         await api.put(`/api/items/resolve/${id}`);
         alert("Item status updated to Resolved!");
         setMyItems(myItems.map(item => item._id === id ? {...item, isResolved: true} : item));
-        // refresh user profile so points update
-        try {
-            const resp = await api.get('/api/users/me');
-            localStorage.setItem('user', JSON.stringify(resp.data));
-        } catch (e) { console.warn('Could not refresh profile', e); }
     } catch (err) {
         console.error("Resolve Error:", err); // <-- Variable used here!
         alert("Error updating status");
@@ -85,10 +82,6 @@ const MyItems = () => {
                             </div>
                             
                             <p style={{ fontSize: '14px', color: '#aaa', minHeight: '40px' }}>{item.description}</p>
-                            <p style={{ fontSize: '12px', color: '#bbb', marginTop: '5px' }}>
-                                <strong>ID:</strong> {item.specialId || 'N/A'} | 
-                                <strong>Loc:</strong> {item.location || 'UNKNOWN'}
-                            </p>
                             
                             <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
                                 {!item.isResolved && (

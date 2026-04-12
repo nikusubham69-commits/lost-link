@@ -2,22 +2,15 @@ import { useEffect, useState } from 'react';
 import api from '../api';
 import { io } from 'socket.io-client';
 import { colors, containerStyle } from '../styles';
-import StartChatButton from '../components/StartChatButton';
 
 const Home = () => {
   const [items, setItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeCategory, setActiveCategory] = useState("ALL");
-  const [comments, setComments] = useState({}); // id->array
-  const [showCommentsFor, setShowCommentsFor] = useState(null);
-  const [newComment, setNewComment] = useState("");
 
   const categories = ["ALL", "ELECTRONICS", "ID CARDS", "BOOKS", "WALLETS", "OTHERS"];
 
   useEffect(() => {
-    if (Notification && Notification.permission !== 'granted') {
-      Notification.requestPermission();
-    }
     api.get('/api/items/all')
       .then(res => setItems(res.data.filter(item => !item.isResolved)))
       .catch(err => console.log(err));
@@ -25,12 +18,8 @@ const Home = () => {
     const socket = io(import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
     socket.on('new-item', (item) => {
       if (!item.isResolved) {
-    setItems(prev => [item, ...prev]);
-    const msg = `📡 NEW SIGNAL: ${item.title} (${item.specialId || 'NO-ID'}) posted.`;
-    alert(msg);
-    if (Notification.permission === 'granted') {
-      new Notification('Lost-Link', { body: msg });
-    }
+        setItems(prev => [item, ...prev]);
+        alert(`📡 NEW SIGNAL: ${item.title} (${item.specialId || 'NO-ID'}) posted.`);
       }
     });
 
@@ -44,45 +33,6 @@ const Home = () => {
     const matchesCategory = activeCategory === "ALL" || item.category.toUpperCase() === activeCategory;
     return matchesSearch && matchesCategory;
   });
-
-  // comment/report helpers
-  const loadComments = async (itemId) => {
-    if (showCommentsFor === itemId) {
-      setShowCommentsFor(null);
-      return;
-    }
-    try {
-      const res = await api.get(`/api/items/${itemId}/comments`);
-      setComments(prev => ({ ...prev, [itemId]: res.data }));
-      setShowCommentsFor(itemId);
-    } catch (err) {
-      console.error('Failed to load comments', err);
-    }
-  };
-
-  const postComment = async (itemId) => {
-    if (!newComment.trim()) return;
-    try {
-      const res = await api.post(`/api/items/${itemId}/comments`, { text: newComment });
-      setComments(prev => ({ ...prev, [itemId]: [...(prev[itemId]||[]), res.data] }));
-      setNewComment('');
-    } catch (err) {
-      console.error('Failed to post comment', err);
-      alert('Could not post comment');
-    }
-  };
-
-  const reportItem = async (itemId) => {
-    const reason = window.prompt('Please specify reason for reporting this post:');
-    if (!reason) return;
-    try {
-      await api.post(`/api/items/report/${itemId}`, { reason });
-      alert('Report submitted. Thank you.');
-    } catch (err) {
-      console.error('Report failed', err);
-      alert('Could not report');
-    }
-  };
 
   return (
     <div style={containerStyle}>
@@ -120,9 +70,7 @@ const Home = () => {
         </div>
       </div>
 
-
-
-      {/* �📱 Full Screen Grid */}
+      {/* 📱 Full Screen Grid */}
       <div style={gridStyle}>
         {filteredItems.map((item) => (
           <div key={item._id} className="glass-card" style={cardBaseStyle(item.type)}>
@@ -140,51 +88,14 @@ const Home = () => {
               </p>
               <p style={{ color: '#aaa', fontSize: '0.85rem' }}>{item.description}</p>
               
+              {/* 📍 Added Location Tag */}
+              <div style={{ marginTop: '10px', color: colors.gietGold, fontSize: '0.8rem' }}>
+                📍 SECTOR: {item.location || "UNKNOWN ZONE"}
+              </div>
 
               <div style={footerStyle}>
                 <span>{item.userEmail}</span>
               </div>
-
-              {item.postedBy && (
-                <div style={{ marginTop: '12px' }}>
-                  <StartChatButton userId={item.postedBy._id} userName={item.postedBy.name} />
-                </div>
-              )}
-              <div style={{ marginTop: '10px', display: 'flex', gap: '10px' }}>
-                <button
-                  style={{ ...btnBase, background: '#0077cc' }}
-                  onClick={() => loadComments(item._id)}
-                >
-                  {showCommentsFor === item._id ? 'Hide' : 'Comments'}
-                </button>
-                <button
-                  style={{ ...btnBase, background: '#e67e22' }}
-                  onClick={() => reportItem(item._id)}
-                >Report</button>
-              </div>
-              {showCommentsFor === item._id && (
-                <div style={{ marginTop: '10px', background: '#111', padding: '10px', borderRadius: '8px' }}>
-                  <div>
-                    {comments[item._id]?.map(c => (
-                      <div key={c._id} style={{ marginBottom: '8px' }}>
-                        <strong>{c.user?.name || 'Anon'}</strong>: {c.text}
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ display: 'flex', gap: '5px' }}>
-                    <input
-                      value={newComment}
-                      onChange={e => setNewComment(e.target.value)}
-                      placeholder="Add comment"
-                      style={{ flex: 1, padding: '6px', borderRadius: '4px', border: '1px solid #444', background:'#222', color:'#fff' }}
-                    />
-                    <button
-                      style={{ ...btnBase, background: '#2ecc71' }}
-                      onClick={() => postComment(item._id)}
-                    >Send</button>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         ))}
@@ -202,16 +113,5 @@ const imageBoxStyle = { height: '180px', position: 'relative', background: '#000
 const imgStyle = { width: '100%', height: '100%', objectFit: 'cover' };
 const badgeStyle = (type) => ({ position: 'absolute', top: '10px', right: '10px', padding: '4px 10px', borderRadius: '5px', background: type==='found'?colors.neonGreen:colors.neonRed, color: '#000', fontWeight: 'bold', fontSize: '0.7rem' });
 const footerStyle = { display: 'flex', justifyContent: 'space-between', marginTop: '15px', fontSize: '0.7rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px', opacity: 0.6 };
-
-// button base used in comment/report UI
-const btnBase = {
-  color: 'white',
-  border: 'none',
-  padding: '6px 12px',
-  borderRadius: '6px',
-  cursor: 'pointer',
-  fontWeight: 'bold',
-  fontSize: '12px'
-};
 
 export default Home;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
-import { inputStyle, buttonStyle, formStyle } from '../styles';
+import { inputStyle, buttonStyle, formStyle, fieldHintStyle } from '../styles';
 
 const Profile = () => {
     const [profile, setProfile] = useState(null);
@@ -40,25 +40,38 @@ const Profile = () => {
             <h2>Your Profile</h2>
             {editing ? (
                 <form style={formStyle} onSubmit={handleSave}>
-                    <input
-                        style={inputStyle}
-                        value={form.name}
-                        onChange={e => setForm({...form, name: e.target.value})}
-                        placeholder="Full Name"
-                    />
-                    <input
-                        style={inputStyle}
-                        value={form.phone}
-                        onChange={e => setForm({...form, phone: e.target.value})}
-                        placeholder="Phone"
-                    />
-                    <input
-                        style={inputStyle}
-                        type="password"
-                        value={form.password}
-                        onChange={e => setForm({...form, password: e.target.value})}
-                        placeholder="New password (leave blank to keep)"
-                    />
+                    <div>
+                        <label style={{ display: 'block', color: '#d4f4ff', fontWeight: 600, marginBottom: 6 }}>Full name</label>
+                        <input
+                            className="readable-input"
+                            style={inputStyle}
+                            value={form.name}
+                            onChange={e => setForm({...form, name: e.target.value})}
+                            placeholder="Type your full name"
+                        />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', color: '#d4f4ff', fontWeight: 600, marginBottom: 6 }}>Phone</label>
+                        <input
+                            className="readable-input"
+                            style={inputStyle}
+                            value={form.phone}
+                            onChange={e => setForm({...form, phone: e.target.value})}
+                            placeholder="Mobile number"
+                        />
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', color: '#d4f4ff', fontWeight: 600, marginBottom: 6 }}>New password (leave blank to keep current)</label>
+                        <input
+                            className="readable-input"
+                            style={inputStyle}
+                            type="password"
+                            value={form.password}
+                            onChange={e => setForm({...form, password: e.target.value})}
+                            placeholder="Enter new password only if you want to change it"
+                        />
+                        <p style={fieldHintStyle}>Leave empty if you do not want to change your password.</p>
+                    </div>
                     <button style={buttonStyle} type="submit">Save</button>
                     <button style={{...buttonStyle, background:'#ccc', color:'#000'}} type="button" onClick={()=>setEditing(false)}>Cancel</button>
                 </form>
