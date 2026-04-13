@@ -65,6 +65,82 @@ exports.getItems = async (req, res) => {
     }
 };
 
+exports.getItemById = async (req, res) => {
+    try {
+        const item = await Item.findById(req.params.id);
+        if (!item) return res.status(404).json({ message: "Item not found" });
+        res.status(200).json(item);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.getMyItems = async (req, res) => {
+    try {
+        const items = await Item.find({ postedBy: req.user._id }).sort({ createdAt: -1 });
+        res.status(200).json(items);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.updateItem = async (req, res) => {
+    try {
+        const item = await Item.findById(req.params.id);
+        if (!item) return res.status(404).json({ message: "Item not found" });
+        if (!item.postedBy.equals(req.user._id)) return res.status(403).json({ message: "Not authorized" });
+
+        const updateData = {
+            ...req.body,
+            image: req.file ? req.file.path : item.image,
+        };
+
+        const updatedItem = await Item.findByIdAndUpdate(req.params.id, updateData, { new: true });
+        res.status(200).json(updatedItem);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+const Comment = require('../models/Comment');
+
+exports.getComments = async (req, res) => {
+    try {
+        const comments = await Comment.find({ item: req.params.id }).populate('user', 'name email').sort({ createdAt: -1 });
+        res.status(200).json(comments);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.addComment = async (req, res) => {
+    try {
+        const item = await Item.findById(req.params.id);
+        if (!item) return res.status(404).json({ message: "Item not found" });
+
+        const comment = await Comment.create({
+            item: item._id,
+            user: req.user._id,
+            text: req.body.text,
+        });
+
+        res.status(201).json(comment);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+exports.reportItem = async (req, res) => {
+    try {
+        const item = await Item.findById(req.params.id);
+        if (!item) return res.status(404).json({ message: "Item not found" });
+
+        // This is a simple report endpoint; extend later if you want to save reports.
+        res.status(200).json({ message: "Report received. Admins will review this item." });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
 
 exports.deleteItem = async (req, res) => {
     try {
