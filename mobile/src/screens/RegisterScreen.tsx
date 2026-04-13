@@ -48,7 +48,7 @@ const RegisterScreen = ({ navigation }: any) => {
 
     setLoading(true);
     try {
-      await api.post('/auth/verify-otp', { phone, code: otp });
+      await api.post('/auth/verify-otp', { phone, otp });
       setOtpVerified(true);
       Alert.alert('ACCESS GRANTED', 'PHONE NUMBER VERIFIED. PROCEED TO ESTABLISH IDENTITY.');
     } catch (err: any) {
